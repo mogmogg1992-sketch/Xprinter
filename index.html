@@ -57,7 +57,7 @@
             document.getElementById('preview-price').innerText = price ? parseFloat(price).toFixed(2) : "0.00";
         }
 
-        function printReceipt() {
+                function printReceipt() {
             let code = document.getElementById('barcode-input').value;
             let name = document.getElementById('name-input').value;
             let price = document.getElementById('price-input').value;
@@ -66,8 +66,23 @@
             
             let formattedPrice = parseFloat(price).toFixed(2);
 
-            // Формируем чистый текст чека
-            let receiptText = `
+            // Формируем команды TSPL для режима этикеток Xprinter 365b
+            // SIZE 58 mm, 40 mm (задаем стандартный размер этикетки)
+            let tsplText = "SIZE 58 mm, 40 mm\r\n" +
+                           "GAP 2 mm, 0 mm\r\n" +
+                           "DIRECTION 1\r\n" +
+                           "CLS\r\n" +
+                           "TEXT 30,30,\"3\",0,1,1,\"OOO MAGAZIN\"\r\n" +
+                           "TEXT 30,70,\"3\",0,1,1,\"TOVAR: " + name + "\"\r\n" +
+                           "TEXT 30,110,\"3\",0,1,1,\"PRICE: " + formattedPrice + " RUB\"\r\n" +
+                           "BARCODE 30,160,\"128\",60,1,0,2,2,\"" + code + "\"\r\n" +
+                           "PRINT 1,1\r\n";
+            
+            // Отправляем TSPL-команды напрямую в RawBT
+            let rawUrl = "rawbt:base64," + btoa(unescape(encodeURIComponent(tsplText)));
+            window.location.replace(rawUrl);
+                }
+        
      ООО "МАГАЗИН"
      Кассовый чек
 ---------------------------
