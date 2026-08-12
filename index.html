@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xprinter Сканер-Чеков</title>
+    <title>Xprinter TSPL Этикетки</title>
     <style>
         body { font-family: sans-serif; text-align: center; padding: 15px; background: #eceff1; color: #333; }
         .input-group { margin: 10px auto; max-width: 300px; text-align: left; }
         label { font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px; }
         input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; max-width: 300px; padding: 15px; font-size: 18px; background: #2e7d32; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 15px; }
-        button:active { background: #1b5e20; }
+        button { width: 100%; max-width: 300px; padding: 12px; font-size: 16px; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px; }
+        .btn-generate { background: #0288d1; }
+        .btn-copy { background: #2e7d32; display: none; }
         #receipt-preview { background: #ffff8d; padding: 15px; margin: 20px auto; max-width: 300px; border: 1px dashed #000; text-align: left; font-family: monospace; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        #tspl-output { width: 100%; max-width: 300px; height: 100px; margin: 15px auto; display: none; font-family: monospace; font-size: 12px; padding: 10px; box-sizing: border-box; }
     </style>
 </head>
 <body>
 
-    <h2>Xprinter 365b — Чек</h2>
+    <h2>Xprinter 365b — Этикетка TSPL</h2>
     
     <div class="input-group">
         <label>Штрих-код товара:</label>
-        <input type="text" id="barcode-input" placeholder="Введите или вставьте код" oninput="updatePreview()">
+        <input type="text" id="barcode-input" placeholder="Введите код" oninput="updatePreview()">
     </div>
 
     <div class="input-group">
@@ -35,16 +37,16 @@
     
     <div id="receipt-preview">
         <center><b>ООО "МАГАЗИН"</b></center>
-        <center>Кассовый чек</center>
         <p style="margin:5px 0;">---------------------------</p>
         <p style="margin:5px 0;">ТОВАР: <span id="preview-name">Новый продукт</span></p>
         <p style="margin:5px 0;">КОД: <span id="preview-code">----------</span></p>
         <p style="margin:5px 0;">ЦЕНА: <span id="preview-price">100.00</span> РУБ.</p>
         <p style="margin:5px 0;">---------------------------</p>
-        <center>СПАСИБО ЗА ПОКУПКУ!</center>
     </div>
 
-    <button onclick="printReceipt()">Распечатать чек</button>
+    <button class="btn-generate" onclick="generateTSPL()">1. Сформировать этикетку</button>
+    <textarea id="tspl-output" readonly></textarea>
+    <button class="btn-copy" id="copy-btn" onclick="copyToClipboard()">2. Скопировать код печати</button>
 
     <script>
         function updatePreview() {
@@ -57,7 +59,7 @@
             document.getElementById('preview-price').innerText = price ? parseFloat(price).toFixed(2) : "0.00";
         }
 
-                function printReceipt() {
+        function generateTSPL() {
             let code = document.getElementById('barcode-input').value;
             let name = document.getElementById('name-input').value;
             let price = document.getElementById('price-input').value;
@@ -66,8 +68,7 @@
             
             let formattedPrice = parseFloat(price).toFixed(2);
 
-            // Формируем команды TSPL для режима этикеток Xprinter 365b
-            // SIZE 58 mm, 40 mm (задаем стандартный размер этикетки)
+            // Чистый TSPL код для принтера этикеток
             let tsplText = "SIZE 58 mm, 40 mm\r\n" +
                            "GAP 2 mm, 0 mm\r\n" +
                            "DIRECTION 1\r\n" +
@@ -78,48 +79,18 @@
                            "BARCODE 30,160,\"128\",60,1,0,2,2,\"" + code + "\"\r\n" +
                            "PRINT 1,1\r\n";
             
-            // Отправляем TSPL-команды напрямую в RawBT
-            let rawUrl = "rawbt:base64," + btoa(unescape(encodeURIComponent(tsplText)));
-            window.location.replace(rawUrl);
-                }
-        
-     ООО "МАГАЗИН"
-     Кассовый чек
----------------------------
-ТОВАР: ${name}
-КОД: ${code}
-ЦЕНА: ${formattedPrice} РУБ.
----------------------------
-    СПАСИБО ЗА ПОКУПКУ!
-
-
-
-`;
-            
-            // Самый надежный способ: принудительно перенаправляем браузер на приложение RawBT
-            // Android перехватит эту команду и сразу откроет окно печати
-            let rawUrl = "rawbt:base64," + btoa(unescape(encodeURIComponent(receiptText)));
-            window.location.replace(rawUrl);
+            let output = document.getElementById('tspl-output');
+            output.value = tsplText;
+            output.style.display = "block";
+            document.getElementById('copy-btn').style.display = "block";
         }
-    </script>
-</body>
-</html>
 
-     ООО "МАГАЗИН"
-     Кассовый чек
----------------------------
-ТОВАР: ${name}
-КОД: ${code}
-ЦЕНА: ${formattedPrice} РУБ.
----------------------------
-    СПАСИБО ЗА ПОКУПКУ!
-
-
-
-`;
-            
-            // Используем прямую веб-ссылку RawBT, так как это работает в интернете без локальных серверов
-            window.location.href = "https://rawbt.ru" + encodeURIComponent(receiptText);
+        function copyToClipboard() {
+            let output = document.getElementById('tspl-output');
+            output.select();
+            output.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(output.value);
+            alert("Код этикетки скопирован! Теперь вставьте его в RawBT.");
         }
     </script>
 </body>
