@@ -35,29 +35,39 @@ class _ReceiptScannerPrinterState extends State<ReceiptScannerPrinter> {
 
   void _startBluetoothScan() async {
     FlutterBluePlus.scanResults.listen((results) {
-      setState(() {
-        _devicesList = results.map((r) => r.device).toList();
-      });
+      if (mounted) {
+        setState(() {
+          _devicesList = results.map((r) => r.device).toList();
+        });
+      }
     });
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
+    try {
+      await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
+    } catch (e) {
+      debugPrint("Ошибка сканирования Bluetooth: $e");
+    }
   }
 
   void _printReceipt(String text) async {
     if (_selectedDevice == null) return;
 
-    await _selectedDevice!.connect();
-    List<BluetoothService> services = await _selectedDevice!.discoverServices();
-    
-    for (BluetoothService service in services) {
-      for (BluetoothCharacteristic characteristic in service.characteristics) {
-        if (characteristic.properties.write) {
-          List<int> bytes = [0x1B, 0x40, 0x1B, 0x74, 0x07]; 
-          bytes.addAll(text.codeUnits);   
-          bytes.addAll([0x0A, 0x0A, 0x0A]); 
-          
-          await characteristic.write(bytes);
+    try {
+      await _selectedDevice!.connect();
+      List<BluetoothService> services = await _selectedDevice!.discoverServices();
+      
+      for (BluetoothService service in services) {
+        for (BluetoothCharacteristic characteristic in service.characteristics) {
+          if (characteristic.properties.write) {
+            List<int> bytes = [0x1B, 0x40, 0x1B, 0x74, 0x07]; 
+            bytes.addAll(text.codeUnits);   
+            bytes.addAll([0x0A, 0x0A, 0x0A]); 
+            
+            await characteristic.write(bytes, withoutResponse: false);
+          }
         }
       }
+    } catch (e) {
+      debugPrint("Ошибка печати: $e");
     }
   }
 
@@ -72,7 +82,7 @@ class _ReceiptScannerPrinterState extends State<ReceiptScannerPrinter> {
             child: MobileScanner(
               onDetect: (capture) {
                 final List<Barcode> barcodes = capture.barcodes;
-                if (barcodes.isNotEmpty) {
+                if (barcodes.isNotEmpty && mounted) {
                   setState(() {
                     _scannedData = barcodes.first.rawValue ?? "Ошибка чтения";
                   });
@@ -108,4 +118,3 @@ class _ReceiptScannerPrinterState extends State<ReceiptScannerPrinter> {
     );
   }
 }
-
