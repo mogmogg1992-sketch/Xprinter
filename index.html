@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xprinter Сканер-Чеков</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 15px; background: #eceff1; color: #333; }
+        .input-group { margin: 10px auto; max-width: 300px; text-align: left; }
+        label { font-size: 14px; font-weight: bold; display: block; margin-bottom: 5px; }
+        input { width: 100%; padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { width: 100%; max-width: 300px; padding: 15px; font-size: 18px; background: #2e7d32; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 15px; }
+        button:active { background: #1b5e20; }
+        #receipt-preview { background: #ffff8d; padding: 15px; margin: 20px auto; max-width: 300px; border: 1px dashed #000; text-align: left; font-family: monospace; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <h2>Xprinter 365b — Чек</h2>
+    
+    <div class="input-group">
+        <label>Штрих-код товара:</label>
+        <input type="text" id="barcode-input" placeholder="Введите или вставьте код" oninput="updatePreview()">
+    </div>
+
+    <div class="input-group">
+        <label>Название товара:</label>
+        <input type="text" id="name-input" value="Новый продукт" oninput="updatePreview()">
+    </div>
+
+    <div class="input-group">
+        <label>Цена (руб.):</label>
+        <input type="number" id="price-input" value="100.00" oninput="updatePreview()">
+    </div>
+    
+    <div id="receipt-preview">
+        <center><b>ООО "МАГАЗИН"</b></center>
+        <center>Кассовый чек</center>
+        <p style="margin:5px 0;">---------------------------</p>
+        <p style="margin:5px 0;">ТОВАР: <span id="preview-name">Новый продукт</span></p>
+        <p style="margin:5px 0;">КОД: <span id="preview-code">----------</span></p>
+        <p style="margin:5px 0;">ЦЕНА: <span id="preview-price">100.00</span> РУБ.</p>
+        <p style="margin:5px 0;">---------------------------</p>
+        <center>СПАСИБО ЗА ПОКУПКУ!</center>
+    </div>
+
+    <button onclick="printReceipt()">Распечатать чек</button>
+
+    <script>
+        function updatePreview() {
+            let code = document.getElementById('barcode-input').value;
+            let name = document.getElementById('name-input').value;
+            let price = document.getElementById('price-input').value;
+
+            document.getElementById('preview-code').innerText = code ? code : "----------";
+            document.getElementById('preview-name').innerText = name ? name : "Без названия";
+            document.getElementById('preview-price').innerText = price ? parseFloat(price).toFixed(2) : "0.00";
+        }
+
+        function printReceipt() {
+            let code = document.getElementById('barcode-input').value;
+            let name = document.getElementById('name-input').value;
+            let price = document.getElementById('price-input').value;
+
+            if(!code) { alert("Пожалуйста, введите штрих-код товара!"); return; }
+            
+            let formattedPrice = parseFloat(price).toFixed(2);
+
+            let receiptText = `
+     ООО "МАГАЗИН"
+     Кассовый чек
+---------------------------
+ТОВАР: ${name}
+КОД: ${code}
+ЦЕНА: ${formattedPrice} РУБ.
+---------------------------
+    СПАСИБО ЗА ПОКУПКУ!
+
+
+
+`;
+            
+            // Используем прямую веб-ссылку RawBT, так как это работает в интернете без локальных серверов
+            window.location.href = "https://rawbt.ru" + encodeURIComponent(receiptText);
+        }
+    </script>
+</body>
+</html>
