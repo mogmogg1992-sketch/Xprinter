@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 
 void main() => runApp(const MyApp());
 
@@ -24,7 +23,7 @@ class ReceiptScannerPrinter extends StatefulWidget {
 
 class _ReceiptScannerPrinterState extends State<ReceiptScannerPrinter> {
   BluetoothDevice? _selectedDevice;
-  String _scannedData = "Ничего не отсканировано";
+  final TextEditingController _codeController = TextEditingController();
   List<BluetoothDevice> _devicesList = [];
 
   @override
@@ -44,7 +43,7 @@ class _ReceiptScannerPrinterState extends State<ReceiptScannerPrinter> {
     try {
       await FlutterBluePlus.startScan(timeout: const Duration(seconds: 4));
     } catch (e) {
-      debugPrint("Ошибка сканирования Bluetooth: $e");
+      debugPrint("Bluetooth Error: $e");
     }
   }
 
@@ -67,53 +66,47 @@ class _ReceiptScannerPrinterState extends State<ReceiptScannerPrinter> {
         }
       }
     } catch (e) {
-      debugPrint("Ошибка печати: $e");
+      debugPrint("Print Error: $e");
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Xprinter 365b Сканер/Печать')),
-      body: Column(
-        children: [
-          SizedBox(
-            height: 250,
-            child: MobileScanner(
-              onDetect: (capture) {
-                final List<Barcode> barcodes = capture.barcodes;
-                if (barcodes.isNotEmpty && mounted) {
-                  setState(() {
-                    _scannedData = barcodes.first.rawValue ?? "Ошибка чтения";
-                  });
-                }
+      appBar: AppBar(title: const Text('Xprinter 365b Печать чеков')),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            TextField(
+              controller: _codeController,
+              decoration: const InputDecoration(
+                labelText: 'Введите или отсканируйте штрих-код товара',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 20),
+            DropdownButton<BluetoothDevice>(
+              hint: const Text("Выберите принтер Xprinter"),
+              value: _selectedDevice,
+              items: _devicesList.map((device) {
+                return DropdownMenuItem(
+                  value: device,
+                  child: Text(device.platformName.isEmpty ? device.remoteId.toString() : device.platformName),
+                );
+              }).toList(),
+              onChanged: (device) {
+                setState(() { _selectedDevice = device; });
               },
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text('Данные: $_scannedData', style: const TextStyle(fontSize: 18)),
-          ),
-          DropdownButton<BluetoothDevice>(
-            hint: const Text("Выберите принтер"),
-            value: _selectedDevice,
-            items: _devicesList.map((device) {
-              return DropdownMenuItem(
-                value: device,
-                child: Text(device.platformName.isEmpty ? device.remoteId.toString() : device.platformName),
-              );
-            }).toList(),
-            onChanged: (device) {
-              setState(() { _selectedDevice = device; });
-            },
-          ),
-          const Spacer(),
-          ElevatedButton(
-            onPressed: () => _printReceipt("ТОВАР: $_scannedData\nЦЕНА: 100 РУБ.\nСПАСИБО!"),
-            child: const Text('Распечатать чек'),
-          ),
-          const SizedBox(height: 30),
-        ],
+            const Spacer(),
+            ElevatedButton(
+              onPressed: () => _printReceipt("ТОВАР: ${_codeController.text}\nЦЕНА: 100 РУБ.\nСПАСИБО!"),
+              child: const Text('Распечатать чек'),
+            ),
+            const SizedBox(height: 30),
+          ],
+        ),
       ),
     );
   }
